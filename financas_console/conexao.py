@@ -6,19 +6,23 @@ import mysql.connector
 #senha né mn 4LF6t2gUVnvEDktT
 
 def conectar():
-   """Lê o config.ini e devolve uma conexão aberta e criptografada (TLS)."""
+    cfg = configparser.ConfigParser()
+    cfg.read("config.ini", encoding="utf-8")
+    banco = cfg["banco"]
 
-   cfg = configparser.ConfigParser()
-   cfg.read("config.ini", encoding="utf-8")
-   banco = cfg["banco"]
+    parametros = {
+        "host": banco["host"],
+        "port": banco.getint("porta"),
+        "user": banco["usuario"],
+        "password": banco["senha"],
+        "database": banco["nome"]
+    }
 
-   return mysql.connector.connect(
-       host=banco["host"],
-       port=banco.getint("porta"),
-       user=banco["usuario"],
-       password=banco["senha"],
-       database=banco["nome"],
-       ssl_ca=certifi.where(),       
-       ssl_verify_cert=True,         
-       ssl_verify_identity=True,    
-   )
+    if banco.get("tls", "sim") == "sim":            # nuvem: conexão criptografada
+        parametros["ssl_ca"] = certifi.where()
+        parametros["ssl_verify_cert"] = True
+        parametros["ssl_verify_identity"] = True
+    else:                                           # servidor local: sem TLS
+        parametros["ssl_disabled"] = True
+
+    return mysql.connector.connect(**parametros)   
